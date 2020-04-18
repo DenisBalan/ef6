@@ -210,6 +210,76 @@ namespace System.Data.Entity.Core.Common.Internal.Materialization
             }
         }
 
+        public class GetColumnValueWithErrorHandling : TestBase
+        {
+            [Fact]
+            public void GetColumnValueWithErrorHandling_returns_a_int()
+            {
+                var sourceEnumerable = new[] { new object[] { 1 }, new object[] { 2 } };
+
+                var coordinatorFactory = Objects.MockHelper.CreateCoordinatorFactory<Object>();
+
+                var shaper = new Shaper<object>(
+                    MockHelper.CreateDbDataReader(sourceEnumerable),
+                    /*context*/ null,
+                    /*workspace*/ null,
+                    MergeOption.AppendOnly,
+                    /*stateCount*/ 1,
+                    coordinatorFactory,
+                    /*readerOwned*/ false,
+                    /*useSpatialReader*/ false);
+
+                var obj = shaper.GetEnumerator().MoveNext();
+
+                var intValue = shaper.GetColumnValueWithErrorHandling<int>(ordinal: 0);
+                Assert.Equal(sourceEnumerable.First().First(), intValue);
+            }
+            [Fact]
+            public void Throws_exception_with_column_name_for_invalid_cast_reference()
+            {
+                var sourceEnumerable = new[] { new object[] { 1 }, new object[] { 2 } };
+
+                var coordinatorFactory = Objects.MockHelper.CreateCoordinatorFactory<Object>();
+
+                var shaper = new Shaper<object>(
+                    MockHelper.CreateDbDataReader(sourceEnumerable),
+                    /*context*/ null,
+                    /*workspace*/ null,
+                    MergeOption.AppendOnly,
+                    /*stateCount*/ 1,
+                    coordinatorFactory,
+                    /*readerOwned*/ false,
+                    /*useSpatialReader*/ false);
+
+                var obj = shaper.GetEnumerator().MoveNext();
+
+                var ex = Assert.Throws<InvalidOperationException>(() => shaper.GetColumnValueWithErrorHandling<DateTime>(ordinal: 0));
+                Assert.Contains("column0", ex.Message); // column name is mocking via expr "column" + ordinal
+            }
+            [Fact]
+            public void Throws_exception_with_column_name_for_nullable_column_cast()
+            {
+                var sourceEnumerable = new[] { new object[] { 1 }, new object[] { 2 } };
+
+                var coordinatorFactory = Objects.MockHelper.CreateCoordinatorFactory<Object>();
+
+                var shaper = new Shaper<object>(
+                    MockHelper.CreateDbDataReader(sourceEnumerable),
+                    /*context*/ null,
+                    /*workspace*/ null,
+                    MergeOption.AppendOnly,
+                    /*stateCount*/ 1,
+                    coordinatorFactory,
+                    /*readerOwned*/ false,
+                    /*useSpatialReader*/ false);
+
+                var obj = shaper.GetEnumerator().MoveNext();
+
+                var ex = Assert.Throws<InvalidOperationException>(() => shaper.GetColumnValueWithErrorHandling<DateTime?>(ordinal: 0));
+                Assert.Contains("column0", ex.Message); // column name is mocking via expr "column" + ordinal
+                Assert.Contains("nullable", ex.Message); // Nullable<DateTime> used here
+            }
+        }
         public class GetSpatialColumnValueWithErrorHandling : TestBase
         {
             [Fact]
